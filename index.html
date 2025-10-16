@@ -7,31 +7,50 @@
   const viewerTitle = document.getElementById('viewerTitle');
   const hint = document.getElementById('hint');
 
-  // ترتيب الأسماء ↔ ملفات PDF: page-01.pdf .. page-22.pdf
+  // أسماء المدرّبين مرتبة، مع رقم الصفحة الخاص بكل مدرّب
   const trainers = [
-    { name:"محمد سليمان التويجري",       url:"page-01.pdf" },
-    { name:"ابراهيم عبدالله الجطيلي",    url:"page-02.pdf" },
-    { name:"احمد عبدالعزيز الخميس",       url:"page-03.pdf" },
-    { name:"عبدالله صالح السحيباني",     url:"page-04.pdf" },
-    { name:"عبدالله صالح السحيباني",     url:"page-05.pdf" },
-    { name:"وليد صالح اليحيى",           url:"page-06.pdf" },
-    { name:"يوسف محمد المشاري",          url:"page-07.pdf" },
-    { name:"علي صالح العثمان",           url:"page-08.pdf" },
-    { name:"صالح عبدالكريم المقبل",      url:"page-09.pdf" },
-    { name:"فلاح سند الحربي",            url:"page-10.pdf" },
-    { name:"صالح عويض الرشيدي",          url:"page-11.pdf" },
-    { name:"دخيل الله جمعة الجمعة",       url:"page-12.pdf" },
-    { name:"محمد رجاء الرشيدي",          url:"page-13.pdf" },
-    { name:"عبدالعزيز سليمان الجبري",     url:"page-14.pdf" },
-    { name:"محمد حمدان المطيري",         url:"page-15.pdf" },
-    { name:"مبارك بن شمروخ",             url:"page-16.pdf" },
-    { name:"هادي يحيى آل مشرف",          url:"page-17.pdf" },
-    { name:"هادي يحيى آل مشرف",          url:"page-18.pdf" },
-    { name:"محمد علي القفيعي",           url:"page-19.pdf" },
-    { name:"محمد ابراهيم النقيدان",      url:"page-20.pdf" },
-    { name:"عيسى فهد الشمري",            url:"page-21.pdf" },
-    { name:"فهد عبدالله المقبل",          url:"page-22.pdf" }
+    { n:1,  name:"محمد سليمان التويجري" },
+    { n:2,  name:"ابراهيم عبدالله الجطيلي" },
+    { n:3,  name:"احمد عبدالعزيز الخميس" },
+    { n:4,  name:"عبدالله صالح السحيباني" },
+    { n:5,  name:"عبدالله صالح السحيباني" }, // مكرر حسب قائمتك
+    { n:6,  name:"وليد صالح اليحيى" },
+    { n:7,  name:"يوسف محمد المشاري" },
+    { n:8,  name:"علي صالح العثمان" },
+    { n:9,  name:"صالح عبدالكريم المقبل" },
+    { n:10, name:"فلاح سند الحربي" },
+    { n:11, name:"صالح عويض الرشيدي" },
+    { n:12, name:"دخيل الله جمعة الجمعة" },
+    { n:13, name:"محمد رجاء الرشيدي" },
+    { n:14, name:"عبدالعزيز سليمان الجبري" },
+    { n:15, name:"محمد حمدان المطيري" },
+    { n:16, name:"مبارك بن شمروخ" },
+    { n:17, name:"هادي يحيى آل مشرف" },
+    { n:18, name:"هادي يحيى آل مشرف" }, // مكرر حسب قائمتك
+    { n:19, name:"محمد علي القفيعي" },
+    { n:20, name:"محمد ابراهيم النقيدان" },
+    { n:21, name:"عيسى فهد الشمري" },
+    { n:22, name:"فهد عبدالله المقبل" }
   ];
+
+  // دالة تفحص أي اسم ملف موجود فعلاً (تجرب الصيغ المحتملة)
+  async function resolvePdfUrl(num){
+    const pad2 = String(num).padStart(2,'0');
+    const candidates = [
+      `page-${pad2}.pdf`,
+      `page-${num}.pdf`,
+      `page-${pad2}.PDF`,
+      `page-${num}.PDF`
+    ];
+    for(const url of candidates){
+      try{
+        const res = await fetch(url, { method:'HEAD', cache:'no-store' });
+        if(res.ok) return url;
+      }catch(_){}
+    }
+    // إن ما لقي شيء نرجّع أول اسم افتراضي (عشان على الأقل يظهر زر الفتح)
+    return candidates[0];
+  }
 
   function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent); }
 
@@ -40,19 +59,23 @@
     list.forEach(it=>{
       const el = document.createElement('div');
       el.className = 'trainer';
-      el.innerHTML = '<div style="display:flex;align-items:center;gap:8px"><span class="dot"></span><div style="font-weight:700">'+it.name+'</div></div><div style="opacity:.6">›</div>';
+      el.innerHTML = `<div style="display:flex;align-items:center;gap:8px">
+          <span class="dot"></span><div style="font-weight:700">${it.name}</div>
+        </div><div style="opacity:.6">›</div>`;
       el.onclick = ()=> select(it);
       listEl.appendChild(el);
     });
   }
 
-  function select(it){
+  async function select(it){
     viewerTitle.textContent = '📄 ' + it.name;
-    pdfObj.data = it.url;
-    openNew.href = it.url;
+    // نحاول نلقى الاسم الصحيح للملف
+    const url = await resolvePdfUrl(it.n);
+    pdfObj.data = url;
+    openNew.href = url;
     if(isIOS()){
       hint.style.display = 'block';
-      window.open(it.url,'_blank');
+      // على iOS أحياناً العارض داخل الصفحة ما يشتغل، نخلي الزر موجود
     } else {
       hint.style.display = 'none';
     }
